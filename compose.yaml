@@ -1,0 +1,52 @@
+services:
+  app:
+    image: telegram-saldo-app:${APP_VERSION:-local}
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: telegram-saldo-app
+    restart: unless-stopped
+    stop_grace_period: 30s
+    environment:
+      SPRING_PROFILES_ACTIVE: prod
+      SPRING_DATASOURCE_URL: ${SPRING_DATASOURCE_URL:?SPRING_DATASOURCE_URL is required}
+      SPRING_DATASOURCE_USERNAME: ${SPRING_DATASOURCE_USERNAME:?SPRING_DATASOURCE_USERNAME is required}
+      SPRING_DATASOURCE_PASSWORD: ${SPRING_DATASOURCE_PASSWORD:?SPRING_DATASOURCE_PASSWORD is required}
+      SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE: ${SPRING_DATASOURCE_HIKARI_MAXIMUM_POOL_SIZE:-5}
+      SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE: ${SPRING_DATASOURCE_HIKARI_MINIMUM_IDLE:-1}
+      TELEGRAM_BOT_TOKEN: ${TELEGRAM_BOT_TOKEN:?TELEGRAM_BOT_TOKEN is required}
+      TELEGRAM_WEBHOOK_PUBLIC_URL: ${TELEGRAM_WEBHOOK_PUBLIC_URL:?TELEGRAM_WEBHOOK_PUBLIC_URL is required}
+      TELEGRAM_WEBHOOK_SECRET: ${TELEGRAM_WEBHOOK_SECRET:?TELEGRAM_WEBHOOK_SECRET is required}
+      TELEGRAM_WEBHOOK_AUTO_REGISTER: ${TELEGRAM_WEBHOOK_AUTO_REGISTER:-true}
+      TELEGRAM_WEBHOOK_MANUAL_MANAGEMENT_ENABLED: ${TELEGRAM_WEBHOOK_MANUAL_MANAGEMENT_ENABLED:-false}
+      TZ: ${TZ:-America/Sao_Paulo}
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 40s
+    read_only: true
+    tmpfs:
+      - /tmp:size=64m,mode=1777
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    mem_limit: ${APP_MEMORY_LIMIT:-768m}
+    cpus: ${APP_CPU_LIMIT:-0.75}
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "5"
+    networks:
+      - db_net
+      - edge_net
+
+networks:
+  db_net:
+    external: true
+    name: ${DB_NETWORK_NAME:-telegram-saldo-db}
+  edge_net:
+    name: ${EDGE_NETWORK_NAME:-telegram-saldo-edge}

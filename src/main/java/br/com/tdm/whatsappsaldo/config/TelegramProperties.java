@@ -11,10 +11,49 @@ import org.springframework.stereotype.Component;
 @ConfigurationProperties(prefix = "telegram")
 public class TelegramProperties {
 
-    private String botToken = "";
-    private String apiUrl = "https://api.telegram.org";
+    private Bot bot = new Bot();
+    private Webhook webhook = new Webhook();
+
+    public String getBotToken() {
+        return bot.getToken();
+    }
+
+    public String getApiUrl() {
+        return bot.getApiUrl();
+    }
 
     public boolean hasTokenConfigured() {
-        return botToken != null && !botToken.isBlank();
+        return getBotToken() != null && !getBotToken().isBlank();
+    }
+
+    @Getter
+    @Setter
+    public static class Bot {
+
+        private String token = "";
+        private String apiUrl = "https://api.telegram.org";
+    }
+
+    @Getter
+    @Setter
+    public static class Webhook {
+
+        private String url = "";
+        private String secret = "";
+        private boolean autoRegister;
+        private boolean requireSecret;
+        private boolean manualManagementEnabled = true;
+
+        public boolean hasUrlConfigured() {
+            return url != null && !url.isBlank();
+        }
+
+        public boolean hasSecretConfigured() {
+            return secret != null && !secret.isBlank();
+        }
+
+        public boolean hasValidSecret() {
+            return hasSecretConfigured() && secret.matches("[A-Za-z0-9_-]{1,256}");
+        }
     }
 }

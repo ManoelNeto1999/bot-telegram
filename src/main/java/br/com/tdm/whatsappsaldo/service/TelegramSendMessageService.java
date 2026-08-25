@@ -20,7 +20,7 @@ public class TelegramSendMessageService {
 
     public void enviarMensagem(String chatId, String mensagem) {
         if (!telegramProperties.hasTokenConfigured()) {
-            log.info("Telegram nao configurado. Resposta simulada para chatId {}: {}", chatId, mensagem);
+            log.info("Telegram nao configurado. Envio de resposta ignorado.");
             return;
         }
 
@@ -37,19 +37,16 @@ public class TelegramSendMessageService {
                     .retrieve()
                     .body(JsonNode.class);
 
-            log.info("Resposta enviada com sucesso para chatId {}.", chatId);
-            log.debug("Retorno Telegram sendMessage: {}", resposta);
+            log.info("Resposta enviada com sucesso pelo Telegram.");
+            log.debug("Telegram confirmou sendMessage: {}", resposta != null && resposta.path("ok").asBoolean(false));
         } catch (RestClientResponseException ex) {
             log.error(
-                    "Erro ao enviar resposta para chatId {}. Status: {}. Body: {}",
-                    chatId,
-                    ex.getStatusCode(),
-                    ex.getResponseBodyAsString()
+                    "Erro ao enviar resposta pelo Telegram. Status: {}.",
+                    ex.getStatusCode()
             );
         } catch (Exception ex) {
             log.error(
-                    "Erro inesperado ao enviar resposta para chatId {}. Tipo: {}",
-                    chatId,
+                    "Erro inesperado ao enviar resposta pelo Telegram. Tipo: {}",
                     ex.getClass().getSimpleName()
             );
         }

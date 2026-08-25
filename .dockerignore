@@ -1,0 +1,13 @@
+.git
+.gitignore
+.gitattributes
+.idea
+.vscode
+target
+.env
+.env.*
+!.env.example
+*.log
+*.md
+mvnw.cmd
+compose*.yaml

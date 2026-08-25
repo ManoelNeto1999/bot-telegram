@@ -2,6 +2,7 @@ package br.com.tdm.whatsappsaldo.service;
 
 import br.com.tdm.whatsappsaldo.config.TelegramProperties;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.LinkedHashMap;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,11 +26,17 @@ public class TelegramWebhookManagementService {
     public JsonNode registrarWebhook(String url) {
         validarTokenConfigurado();
 
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("url", url);
+        if (telegramProperties.getWebhook().hasSecretConfigured()) {
+            payload.put("secret_token", telegramProperties.getWebhook().getSecret());
+        }
+
         try {
             JsonNode resposta = restClient().post()
                     .uri("/bot{token}/setWebhook", telegramProperties.getBotToken())
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(Map.of("url", url))
+                    .body(payload)
                     .retrieve()
                     .body(JsonNode.class);
 
@@ -37,9 +44,8 @@ public class TelegramWebhookManagementService {
             return resposta;
         } catch (RestClientResponseException ex) {
             log.error(
-                    "Erro ao registrar webhook. Status: {}. Body: {}",
-                    ex.getStatusCode(),
-                    ex.getResponseBodyAsString()
+                    "Erro ao registrar webhook. Status: {}.",
+                    ex.getStatusCode()
             );
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,
@@ -67,9 +73,8 @@ public class TelegramWebhookManagementService {
                     .body(JsonNode.class);
         } catch (RestClientResponseException ex) {
             log.error(
-                    "Erro ao consultar webhook-info. Status: {}. Body: {}",
-                    ex.getStatusCode(),
-                    ex.getResponseBodyAsString()
+                    "Erro ao consultar webhook-info. Status: {}.",
+                    ex.getStatusCode()
             );
             throw new ResponseStatusException(
                     HttpStatus.BAD_GATEWAY,

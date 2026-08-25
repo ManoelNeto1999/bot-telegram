@@ -39,12 +39,12 @@ public class TelegramWebhookService {
         String chatId = chatIdNode.asText("");
         JsonNode textNode = messageNode.path("text");
         if (textNode.isMissingNode() || textNode.isNull() || textNode.asText("").isBlank()) {
-            log.info("Mensagem ignorada para chatId {} por nao ser texto.", chatId);
+            log.info("Mensagem do update {} ignorada por nao ser texto.", updateId);
             return;
         }
 
         String textoMensagem = textNode.asText().trim();
-        log.info("Mensagem recebida do chatId {}: {}", chatId, textoMensagem);
+        log.debug("Mensagem de texto valida recebida no update {}.", updateId);
 
         MensagemSimuladaRequest request = new MensagemSimuladaRequest(chatId, textoMensagem);
         MensagemSimuladaResponse resposta = saldoBotService.processarMensagem(request);
