@@ -2,6 +2,8 @@ package br.com.tdm.whatsappsaldo.service;
 
 import br.com.tdm.whatsappsaldo.config.TelegramProperties;
 import com.fasterxml.jackson.databind.JsonNode;
+import java.util.HashSet;
+import java.util.Set;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
@@ -45,10 +47,11 @@ public class TelegramWebhookInitializer {
 
         try {
             JsonNode webhookInfo = telegramWebhookManagementService.consultarWebhookInfo();
-            String currentUrl = webhookInfo.path("result").path("url").asText("").trim();
+            JsonNode result = webhookInfo.path("result");
+            String currentUrl = result.path("url").asText("").trim();
 
-            if (desiredUrl.equals(currentUrl)) {
-                log.info("Webhook do Telegram ja esta configurado com a URL esperada.");
+            if (desiredUrl.equals(currentUrl) && allowedUpdatesCorretos(result.path("allowed_updates"))) {
+                log.info("Webhook do Telegram ja esta configurado com URL e allowed_updates esperados.");
                 return;
             }
 
@@ -64,5 +67,16 @@ public class TelegramWebhookInitializer {
                     ex.getClass().getSimpleName()
             );
         }
+    }
+
+    static boolean allowedUpdatesCorretos(JsonNode allowedUpdates) {
+        if (allowedUpdates == null || !allowedUpdates.isArray()
+                || allowedUpdates.size() != TelegramWebhookManagementService.EXPECTED_ALLOWED_UPDATES.size()) {
+            return false;
+        }
+
+        Set<String> current = new HashSet<>();
+        allowedUpdates.forEach(item -> current.add(item.asText("")));
+        return current.equals(new HashSet<>(TelegramWebhookManagementService.EXPECTED_ALLOWED_UPDATES));
     }
 }

@@ -3,6 +3,7 @@ package br.com.tdm.whatsappsaldo.service;
 import br.com.tdm.whatsappsaldo.config.TelegramProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -19,6 +20,13 @@ import org.springframework.web.server.ResponseStatusException;
 public class TelegramWebhookManagementService {
 
     private static final String TOKEN_NAO_CONFIGURADO = "telegram.bot-token n\u00E3o est\u00E1 configurado.";
+    public static final List<String> EXPECTED_ALLOWED_UPDATES = List.of(
+            "message",
+            "business_connection",
+            "business_message",
+            "edited_business_message",
+            "deleted_business_messages"
+    );
 
     private final TelegramProperties telegramProperties;
     private final RestClient.Builder restClientBuilder;
@@ -28,6 +36,7 @@ public class TelegramWebhookManagementService {
 
         Map<String, Object> payload = new LinkedHashMap<>();
         payload.put("url", url);
+        payload.put("allowed_updates", EXPECTED_ALLOWED_UPDATES);
         if (telegramProperties.getWebhook().hasSecretConfigured()) {
             payload.put("secret_token", telegramProperties.getWebhook().getSecret());
         }

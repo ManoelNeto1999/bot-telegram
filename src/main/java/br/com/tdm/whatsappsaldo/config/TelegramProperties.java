@@ -13,6 +13,7 @@ public class TelegramProperties {
 
     private Bot bot = new Bot();
     private Webhook webhook = new Webhook();
+    private Business business = new Business();
 
     public String getBotToken() {
         return bot.getToken();
@@ -54,6 +55,18 @@ public class TelegramProperties {
 
         public boolean hasValidSecret() {
             return hasSecretConfigured() && secret.matches("[A-Za-z0-9_-]{1,256}");
+        }
+    }
+
+    @Getter
+    @Setter
+    public static class Business {
+
+        private boolean enabled;
+        private String allowedOwnerUserId = "";
+
+        public boolean hasAllowedOwnerUserId() {
+            return allowedOwnerUserId != null && !allowedOwnerUserId.isBlank();
         }
     }
 }

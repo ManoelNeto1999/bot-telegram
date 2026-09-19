@@ -49,12 +49,57 @@ class TelegramWebhookInitializerTest {
     @Test
     void naoDeveRegistrarNovamenteQuandoUrlJaEstaCorreta() throws Exception {
         when(managementService.consultarWebhookInfo()).thenReturn(objectMapper.readTree("""
-                {"ok":true,"result":{"url":"https://bot.example.com/api/telegram/webhook"}}
+                {"ok":true,"result":{
+                  "url":"https://bot.example.com/api/telegram/webhook",
+                  "allowed_updates":[
+                    "message",
+                    "business_connection",
+                    "business_message",
+                    "edited_business_message",
+                    "deleted_business_messages"
+                  ]
+                }}
                 """));
 
         initializer.initializeWebhook();
 
         verify(managementService, never()).registrarWebhook(WEBHOOK_URL);
+    }
+
+    @Test
+    void ordemDiferenteDeAllowedUpdatesContinuaCorreta() throws Exception {
+        when(managementService.consultarWebhookInfo()).thenReturn(objectMapper.readTree("""
+                {"ok":true,"result":{
+                  "url":"https://bot.example.com/api/telegram/webhook",
+                  "allowed_updates":[
+                    "deleted_business_messages",
+                    "business_message",
+                    "message",
+                    "edited_business_message",
+                    "business_connection"
+                  ]
+                }}
+                """));
+
+        initializer.initializeWebhook();
+
+        verify(managementService, never()).registrarWebhook(WEBHOOK_URL);
+    }
+
+    @Test
+    void deveRegistrarQuandoUrlIgualMasAllowedUpdatesDiferem() throws Exception {
+        when(managementService.consultarWebhookInfo()).thenReturn(objectMapper.readTree("""
+                {"ok":true,"result":{
+                  "url":"https://bot.example.com/api/telegram/webhook",
+                  "allowed_updates":["message"]
+                }}
+                """));
+        when(managementService.registrarWebhook(WEBHOOK_URL))
+                .thenReturn(objectMapper.readTree("{\"ok\":true}"));
+
+        initializer.initializeWebhook();
+
+        verify(managementService).registrarWebhook(WEBHOOK_URL);
     }
 
     @Test

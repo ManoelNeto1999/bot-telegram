@@ -4,6 +4,7 @@ import br.com.tdm.whatsappsaldo.config.TelegramProperties;
 import com.fasterxml.jackson.databind.JsonNode;
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import lombok.extern.slf4j.Slf4j;
@@ -48,15 +49,26 @@ public class TelegramSendMessageService {
     }
 
     public void enviarMensagem(long updateId, String chatId, String mensagem) {
+        enviarMensagem(updateId, null, chatId, mensagem);
+    }
+
+    public void enviarMensagem(
+            long updateId,
+            String businessConnectionId,
+            String chatId,
+            String mensagem
+    ) {
         if (!telegramProperties.hasTokenConfigured()) {
             log.info("Telegram nao configurado. Envio de resposta ignorado. updateId={}", updateId);
             return;
         }
 
-        Map<String, Object> payload = Map.of(
-                "chat_id", chatId,
-                "text", mensagem
-        );
+        Map<String, Object> payload = new LinkedHashMap<>();
+        payload.put("chat_id", chatId);
+        payload.put("text", mensagem);
+        if (businessConnectionId != null) {
+            payload.put("business_connection_id", businessConnectionId);
+        }
 
         for (int tentativa = 1; tentativa <= MAX_TENTATIVAS; tentativa++) {
             long inicio = System.nanoTime();

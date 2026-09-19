@@ -64,6 +64,17 @@ Obrigatórias:
 - `TELEGRAM_WEBHOOK_PUBLIC_URL`
 - `TELEGRAM_WEBHOOK_SECRET`
 
+Opcionais para o POC de Telegram Business:
+
+- `TELEGRAM_BUSINESS_ENABLED` (default `false`);
+- `TELEGRAM_BUSINESS_ALLOWED_OWNER_USER_ID` (obrigatória para executar comandos
+  quando o modo Business estiver habilitado).
+
+Não habilite `TELEGRAM_BUSINESS_ENABLED` por padrão em produção. O fluxo usa
+fail-closed: flag desligada, allowlist ausente, owner divergente, conexão
+desconhecida/desabilitada ou sem `rights.can_reply` impedem qualquer chamada ao
+serviço financeiro e qualquer resposta Telegram.
+
 Exemplo do formato da URL JDBC, sem credenciais:
 
 ```text
@@ -179,9 +190,12 @@ Depois do `ApplicationReadyEvent`, a aplicação:
 
 1. verifica `TELEGRAM_WEBHOOK_AUTO_REGISTER`;
 2. consulta `getWebhookInfo`;
-3. compara a URL atual com `TELEGRAM_WEBHOOK_PUBLIC_URL`;
-4. mantém o webhook se a URL já estiver correta;
-5. caso contrário, chama `setWebhook` com URL e `secret_token`;
+3. compara a URL atual com `TELEGRAM_WEBHOOK_PUBLIC_URL` e confere, sem considerar
+   ordem, o conjunto exato de `allowed_updates`;
+4. mantém o webhook somente se URL e `allowed_updates` estiverem corretos;
+5. caso contrário, chama `setWebhook` com URL, `secret_token` e os updates
+   `message`, `business_connection`, `business_message`,
+   `edited_business_message` e `deleted_business_messages`;
 6. registra erro sem encerrar a aplicação se o Telegram estiver indisponível.
 
 Quando a URL já estiver correta, o Telegram não informa qual secret está
@@ -228,8 +242,33 @@ docker compose logs --since 30m app
 ```
 
 Os logs vão para stdout/stderr. O driver `json-file` mantém até cinco arquivos de
-10 MB. Token, senha, secret, texto da mensagem e chat ID não são registrados
-pelos logs explícitos da integração.
+10 MB. Token, senha, secret, texto da mensagem e payload completo não são
+registrados pelos logs explícitos da integração. No POC Business, IDs técnicos
+de update, conexão, chat, mensagem e owner são registrados para auditoria do
+fluxo controlado.
+
+## POC Telegram Connected Business Bot
+
+O modo tradicional continua processando `update.message` e responde sem
+`business_connection_id`. Quando a feature flag está habilitada, o modo Business
+processa apenas `update.business_message` textual em chat privado, resolve a
+conexão pelo cache em memória ou por `getBusinessConnection`, valida conexão
+ativa, `rights.can_reply` e o owner explicitamente autorizado, e responde com o
+mesmo `business_connection_id`.
+
+Mensagens de saída (`outgoing`), mensagens com `sender_business_bot`, remetentes
+bot e mensagens cujo remetente é o próprio owner são ignoradas para evitar loop.
+Edições e exclusões são somente registradas; não há reconciliação financeira.
+
+Este POC mantém o `chatId` como identidade financeira apenas porque suporta uma
+única conta Business autorizada em ambiente controlado. **ISTO NÃO É SEGURO PARA
+MÚLTIPLAS EMPRESAS.** Ainda não existe `tenant_id`, deduplicação persistente nem
+outbox, e `business_connection_id` não deve ser tratado como tenant permanente.
+Não use o POC com múltiplas empresas reais.
+
+Também permanece necessária uma validação manual no Telegram para confirmar se
+o formato Connected Business elimina os sponsored messages observados no chat
+direto tradicional com o bot.
 
 ## Rollback
 

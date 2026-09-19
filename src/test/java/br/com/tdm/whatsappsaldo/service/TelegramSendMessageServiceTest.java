@@ -65,6 +65,39 @@ class TelegramSendMessageServiceTest {
     }
 
     @Test
+    void deveEnviarBusinessConnectionIdSomenteNoPayloadBusiness() {
+        String businessPayload = """
+                {"chat_id":"chat-123","text":"resposta pronta","business_connection_id":"connection-1"}
+                """;
+        server.expect(requestTo(SEND_MESSAGE_URL))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().json(businessPayload, true))
+                .andRespond(withSuccess("{\"ok\":true}", MediaType.APPLICATION_JSON));
+
+        service.enviarMensagem(112L, "connection-1", "chat-123", "resposta pronta");
+
+        server.verify();
+        assertThat(delays).isEmpty();
+    }
+
+    @Test
+    void deveReutilizarMesmoPayloadBusinessNoRetry() {
+        String businessPayload = """
+                {"chat_id":"chat-123","text":"resposta pronta","business_connection_id":"connection-1"}
+                """;
+        expectBusinessRequest(businessPayload, withException(new IOException("Connection reset")));
+        expectBusinessRequest(
+                businessPayload,
+                withSuccess("{\"ok\":true}", MediaType.APPLICATION_JSON)
+        );
+
+        service.enviarMensagem(113L, "connection-1", "chat-123", "resposta pronta");
+
+        server.verify();
+        assertThat(delays).containsExactly(500L);
+    }
+
+    @Test
     void deveRepetirApenasOEnvioQuandoPrimeiraTentativaFalha() {
         expectRequestComMesmoPayload(withException(new IOException("Connection reset")));
         expectRequestComMesmoPayload(withSuccess("{\"ok\":true}", MediaType.APPLICATION_JSON));
@@ -228,7 +261,17 @@ class TelegramSendMessageServiceTest {
     ) {
         server.expect(requestTo(SEND_MESSAGE_URL))
                 .andExpect(method(HttpMethod.POST))
-                .andExpect(content().json(PAYLOAD))
+                .andExpect(content().json(PAYLOAD, true))
+                .andRespond(responseCreator);
+    }
+
+    private void expectBusinessRequest(
+            String payload,
+            org.springframework.test.web.client.ResponseCreator responseCreator
+    ) {
+        server.expect(requestTo(SEND_MESSAGE_URL))
+                .andExpect(method(HttpMethod.POST))
+                .andExpect(content().json(payload, true))
                 .andRespond(responseCreator);
     }
 
