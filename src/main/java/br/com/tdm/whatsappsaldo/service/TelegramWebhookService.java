@@ -49,6 +49,6 @@ public class TelegramWebhookService {
         MensagemSimuladaRequest request = new MensagemSimuladaRequest(chatId, textoMensagem);
         MensagemSimuladaResponse resposta = saldoBotService.processarMensagem(request);
 
-        telegramSendMessageService.enviarMensagem(chatId, resposta.resposta());
+        telegramSendMessageService.enviarMensagem(updateId, chatId, resposta.resposta());
     }
 }
