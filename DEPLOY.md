@@ -198,6 +198,17 @@ Depois do `ApplicationReadyEvent`, a aplicação:
    `edited_business_message` e `deleted_business_messages`;
 6. registra erro sem encerrar a aplicação se o Telegram estiver indisponível.
 
+O watchdog aplica a mesma reconciliação a cada
+`TELEGRAM_WEBHOOK_WATCHDOG_INTERVAL_MS` (padrão: 60000 ms), com a primeira
+verificação periódica após esse intervalo. `TELEGRAM_WEBHOOK_WATCHDOG_ENABLED`
+fica habilitado por padrão em produção e desabilitado em dev/test. Definir
+`TELEGRAM_WEBHOOK_AUTO_REGISTER=false` impede tanto o registro no startup quanto
+o registro periódico. A verificação periódica não encerra a aplicação quando a
+API do Telegram falha; ela tenta novamente no próximo ciclo, sem retry imediato.
+Um ciclo já em andamento impede outra reconciliação simultânea na mesma instância.
+O watchdog verifica apenas URL e `allowed_updates`; erros de entrega informados
+por `getWebhookInfo` não provocam novo registro.
+
 Quando a URL já estiver correta, o Telegram não informa qual secret está
 registrado. Portanto, uma rotação apenas do secret exige forçar novo `setWebhook`:
 altere temporariamente a URL, remova o webhook pela API oficial ou habilite o

@@ -42,6 +42,8 @@ public class TelegramProperties {
         private String url = "";
         private String secret = "";
         private boolean autoRegister;
+        private boolean watchdogEnabled;
+        private long watchdogIntervalMs = 60000;
         private boolean requireSecret;
         private boolean manualManagementEnabled = true;
 
